@@ -1,0 +1,86 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Buffalo River 360 — Ground View</title><meta name="description" content="Explore Buffalo River with ground-level 360 panoramas, field photography, and historical river records.">
+  <style>
+    .leaflet-control-attribution,
+    .leaflet-control-attribution * {
+      display: none !important;
+      visibility: hidden !important;
+      opacity: 0 !important;
+      height: 0 !important;
+      pointer-events: none !important;
+    }
+  </style>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="vendor/leaflet.css">
+  <link rel="stylesheet" href="vendor/pannellum.css">
+  <link rel="stylesheet" href="walkthrough.css">
+</head>
+<body>
+  <main id="panorama" aria-label="360 degree river panorama"></main>
+
+  <header class="brand">
+    <div class="brand-row">
+      <img src="4D_logo.jpg" alt="4D Surveying" class="brand-logo">
+      <h1>Buffalo River</h1>
+    </div>
+  </header>
+
+  <nav class="main-tabs" aria-label="Main views"><button id="explore-tab" aria-current="page">Explore</button><button id="records-tab">Photos &amp; River Records</button></nav><div class="explore-tabs"><label class="route-label">Route<select id="route-select" aria-label="Capture route"></select></label><span id="photo-count" hidden></span></div><nav class="tools" aria-label="Viewer tools">
+    
+    
+    
+    <button id="options" title="Information and settings" aria-label="More options" aria-expanded="false" aria-controls="settings">⋯</button>
+  </nav>
+
+  <aside id="settings" hidden aria-label="Information and settings">
+    <div class="panel-title">
+      <h2>Options</h2>
+      <button id="close-settings" aria-label="Close settings">×</button>
+    </div>
+    <div class="utility-actions"><button id="home" title="Return to start" aria-label="Return to the start">⌂</button><button id="share" title="Share this view" aria-label="Share this view">↗</button><button id="fullscreen" title="Full screen" aria-label="Full screen">⛶</button></div><p class="settings-hint">Drag to look around. Forward follows the direction you face; Back returns to your previous view. Use W/S or the ground arrows to walk.</p>
+    <label id="photo-group" hidden>More views here<select id="photo-select"></select></label>
+    <label class="check" hidden><input type="checkbox" id="survey"> Show surveyed trail</label>
+    <label id="share-fallback" hidden>Share view link<input id="share-url" readonly></label>
+    <p class="settings-hint" style="margin-top: 1rem; font-size: 0.75rem; opacity: 0.7;">Imagery &copy; Esri, Maxar, Earthstar Geographics &middot; Map engine powered by Leaflet</p>
+  </aside>
+
+  <section id="map-panel" aria-label="Trail map">
+    <div class="map-heading">
+      <span id="map-label">RIVER MAP</span>
+      <div>
+        <button id="expand-map" aria-label="Expand map" aria-expanded="false">⤢</button>
+        <button id="toggle-map" aria-label="Hide map" aria-expanded="true">−</button>
+      </div>
+    </div>
+    <div id="map"></div>
+  </section>
+
+  <div class="walk-controls" aria-label="Explore the river">
+    <button id="back" aria-label="Return to previous view">← <span>Back</span></button>
+    <button id="turn-around" aria-label="Turn around" title="Turn around">↶ <span>Turn around</span></button>
+    <span class="walk-divider"></span>
+    <button id="forward" aria-label="Walk forward"><span>Forward</span> →</button>
+  </div>
+  <div id="notice" role="status" aria-live="polite" hidden></div>
+  <div id="walk-choices" aria-label="Choose a walking direction" hidden></div>
+  <button id="retry" hidden>Try again</button>
+
+    <div id="capture-stamp" class="capture-stamp" aria-label="Photo capture information">
+    <div class="stamp-pill"><span class="stamp-label">Image capture:</span> <span id="stamp-capture-val">--</span></div>
+    <div class="stamp-pill"><span class="stamp-label">Lat/Lon:</span> <span id="stamp-coords-val">--</span></div>
+  </div>
+
+  <section id="records-page" hidden aria-label="Photos and river records"><header class="records-heading"><div><h2>Photos &amp; River Records</h2><p id="records-caption">Browse photo locations and historical river stations.</p></div><nav class="record-types" aria-label="Record type"><button id="open-photos" aria-pressed="true">Field photos</button><button id="open-river" aria-pressed="false">River records</button></nav></header><div class="records-workspace"><div id="records-map-host"></div><div id="records-detail-host"></div></div></section><aside id="context-panel" hidden aria-label="Photos and river records"><div class="panel-title"><h2 id="context-title"></h2><button id="close-context" aria-label="Close panel">×</button></div><div id="context-body"></div></aside><div id="river-chip" aria-live="polite"></div><dialog id="photo-dialog"><button id="close-photo" aria-label="Close photo">×</button><img id="field-photo" alt=""><div id="field-caption"></div><button id="photo-location">Explore nearest panorama</button><button id="photo-river">River record for this photo</button></dialog><link rel="stylesheet" href="buffalo.css"><link rel="stylesheet" href="waypoints.css"><link rel="stylesheet" href="simple.css"><script type="module" src="buffalo.js"></script><script src="vendor/leaflet.js"></script>
+  <script src="vendor/pannellum.js"></script>
+  <script type="module" src="walkthrough.js"></script>
+</body>
+</html>

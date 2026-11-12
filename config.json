@@ -1,0 +1,11 @@
+{
+  "serviceUrl": "https://services7.arcgis.com/m31DJq6U9sFo0HSy/arcgis/rest/services/Buffalo_River_360_20260915/FeatureServer",
+  "mapId": "357402c650294ec380df73c049a2f62e",
+  "layers": {
+    "stations": 0,
+    "phone": 1,
+    "panorama": 2,
+    "daily": 3,
+    "observations": 4
+  }
+}
