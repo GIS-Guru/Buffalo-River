@@ -22,11 +22,31 @@ export function installWaypoints(catalog,{onPhotoGroup,onGauge}){
  const groups=photoGroups(catalog.phone),api=window.buffalo,map=api.map;
  const photos=L.layerGroup(),gauges=L.layerGroup();
  const markers=[];
+ let selectedKey=null;
+ const keyOf=p=>p.kind==='photo'?p.id:p.StationID;
+ function syncSelection(){
+  for(const {marker,item} of markers){
+   const on=selectedKey!==null&&keyOf(item)===selectedKey;
+   marker.getElement()?.classList.toggle('chosen-waypoint',on);
+  }
+ }
+ function selectWaypoint(key,{pan=false}={}){
+  selectedKey=key;
+  syncSelection();
+  if(pan&&key){
+   const found=markers.find(m=>keyOf(m.item)===key);
+   if(found)map.panTo([found.item.lat,found.item.lon],{animate:true});
+  }
+ }
  function add(p,layer,label){
   const icon=L.divIcon({className:'map-waypoint original-photo',html:'<img src="assets/phone-photo.png" alt="">',iconSize:[20,20],iconAnchor:[10,10]});
   const marker=(p.kind==='photo'?L.marker([p.lat,p.lon],{icon,title:label,keyboard:true}):L.circleMarker([p.lat,p.lon],{radius:stationStyle.radius,color:stationStyle.outline,weight:stationStyle.weight,fillColor:stationStyle.color,fillOpacity:1})).addTo(layer).bindTooltip(label);
-  if(p.kind==='gauge')marker.on('add',()=>{const el=marker.getElement();el?.setAttribute('tabindex','0');el?.setAttribute('role','button');el?.setAttribute('aria-label',label);if(el)el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();marker.fire('click');}};});
-  marker.on('click',()=>{for(const m of markers)m.getElement()?.classList.toggle('chosen-waypoint',m===marker);p.kind==='photo'?onPhotoGroup(p):onGauge(p);});markers.push(marker);
+  marker.on('add',()=>{
+   if(p.kind==='gauge'){const el=marker.getElement();el?.setAttribute('tabindex','0');el?.setAttribute('role','button');el?.setAttribute('aria-label',label);if(el)el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();marker.fire('click');}};}
+   syncSelection();
+  });
+  marker.on('click',()=>{selectWaypoint(keyOf(p));p.kind==='photo'?onPhotoGroup(p):onGauge(p);});
+  markers.push({marker,item:p});
  }
  for(const g of groups)add({...g,kind:'photo'},photos,g.photos.length+(g.photos.length===1?' field photo':' field photos'));
  for(const g of catalog.stations)add({...g,...coord(g),kind:'gauge'},gauges,g.Name);
@@ -37,6 +57,6 @@ export function installWaypoints(catalog,{onPhotoGroup,onGauge}){
  // Supporting information belongs to the records tab, never over the panorama.
  window.buffaloWaypoints=()=>[];api.refreshWaypoints();
  let records=false;
- function setRecordsMode(on){if(on===records)return;records=on;if(on){photos.addTo(map);gauges.addTo(map);routeOverview();requestAnimationFrame(routeOverview);}else{map.removeLayer(photos);map.removeLayer(gauges);}map.invalidateSize();}
- return {groups,setRecordsMode};
+ function setRecordsMode(on){if(on===records)return;records=on;if(on){photos.addTo(map);gauges.addTo(map);syncSelection();routeOverview();requestAnimationFrame(routeOverview);}else{map.removeLayer(photos);map.removeLayer(gauges);}map.invalidateSize();}
+ return {groups,setRecordsMode,selectWaypoint};
 }

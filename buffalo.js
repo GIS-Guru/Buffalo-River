@@ -4,7 +4,7 @@ const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&
 const fmt=(v,n=2)=>v==null?'Unavailable':Number(v).toLocaleString('en-US',{maximumFractionDigits:n,minimumFractionDigits:n});
 const date=v=>new Intl.DateTimeFormat('en-US',{timeZone:'America/Chicago',dateStyle:'medium',timeStyle:'short'}).format(new Date(v));
 const cardinal=d=>Number.isFinite(d)?`${['N','NE','E','SE','S','SW','W','NW'][Math.round(((d%360)+360)%360/45)%8]} (${Math.round(d)}°)`:'';
-let catalog, config, active, panel=null, selectedPhoto=null, pinnedRiver=null, renderToken=0;
+let catalog, config, active, panel=null, selectedPhoto=null, selectedGroup=null, pinnedRiver=null, renderToken=0;
 let recordsMap=null, exploreMapView=null;
 const records=new Map();
 const media=p=>`${config.serviceUrl}/1/${p.OBJECTID}/attachments/${p.attachmentId}`;
@@ -22,20 +22,29 @@ function setSection(records){
  const url=new URL(location.href);records?url.searchParams.set('tab','records'):url.searchParams.delete('tab');history.replaceState(null,'',url);
 }
 function closePanel(){setSection(false);}
-function openPanel(kind){panel=kind;setSection(true);$('open-photos').setAttribute('aria-pressed',String(kind==='photos'));$('open-river').setAttribute('aria-pressed',String(kind==='river'));render();}
+function openPanel(kind,skipRender=false){panel=kind;setSection(true);$('open-photos').setAttribute('aria-pressed',String(kind==='photos'));$('open-river').setAttribute('aria-pressed',String(kind==='river'));if(!skipRender)render();}
 function photoCard(p){const km=active?dist(active,p)/1000:null,dir=cardinal(p.Direction);return `<button class="photo-card" data-photo="${p.OBJECTID}"><img loading="lazy" src="${esc(media(p))}" alt="Field photo taken ${esc(date(p.CaptureDateISO))}"><span>${esc(date(p.CaptureDateISO))}<small>${dir?`Facing ${esc(dir)}`:''}${dir&&km!==null?' · ':''}${km===null?'':`${fmt(km,1)} km from this view`}</small></span></button>`;}
+function waypointPhotoCard(p){const km=active?dist(active,p)/1000:null,dir=cardinal(p.Direction);return `<article class="photo-card waypoint-photo-card"><img class="full-aspect-photo" loading="lazy" src="${esc(media(p))}" alt="Field photo taken ${esc(date(p.CaptureDateISO))}" data-enlarge="${p.OBJECTID}" title="Click to view full screen"><div class="waypoint-photo-meta"><strong>${esc(date(p.CaptureDateISO))} CDT</strong><small>${dir?`Facing ${esc(dir)}`:''}${dir&&km!==null?' · ':''}${km===null?'':`${fmt(km,1)} km from this view`}<br>${p.y.toFixed(6)}, ${p.x.toFixed(6)}${p.PhotoFile?` · ${esc(p.PhotoFile)}`:''}</small><div class="waypoint-photo-actions"><button type="button" data-near-pano="${p.OBJECTID}">Explore nearest panorama</button><button type="button" data-photo-river="${p.OBJECTID}">River record for this photo</button></div></div></article>`;}
 function photoGrid(){
+ selectedGroup=null;
+ recordsMap?.selectWaypoint(null);
  $('context-title').textContent='Field photos';
  $('context-body').innerHTML=`<p class="panel-intro">Choose a photo below or a purple location on the map.</p><label>Capture date<select id="photo-date"><option value="all">All dates · ${catalog.phone.length} photos</option></select></label><div class="filter-row"><label>Order<select id="photo-order"><option value="near">Nearest to this view</option><option value="date">Capture time</option></select></label><span id="photo-result" role="status"></span></div><div id="photo-grid"></div>`;
  const days=[...new Set(catalog.phone.map(p=>p.PhotoDateCDT))].sort();for(const d of days)$('photo-date').add(new Option(d,d));
- function fill(){let photos=catalog.phone.filter(p=>$('photo-date').value==='all'||p.PhotoDateCDT===$('photo-date').value);photos.sort($('photo-order').value==='near'&&active?(a,b)=>dist(active,a)-dist(active,b):(a,b)=>a.CaptureDateISO.localeCompare(b.CaptureDateISO));$('photo-result').textContent=`${photos.length} pictures`;$('photo-grid').innerHTML=photos.map(photoCard).join('');$('photo-grid').querySelectorAll('[data-photo]').forEach(b=>b.onclick=()=>showPhoto(catalog.phone.find(p=>p.OBJECTID===Number(b.dataset.photo))));}
+ function fill(){let photos=catalog.phone.filter(p=>$('photo-date').value==='all'||p.PhotoDateCDT===$('photo-date').value);photos.sort($('photo-order').value==='near'&&active?(a,b)=>dist(active,a)-dist(active,b):(a,b)=>a.CaptureDateISO.localeCompare(b.CaptureDateISO));$('photo-result').textContent=`${photos.length} pictures`;$('photo-grid').innerHTML=photos.map(photoCard).join('');$('photo-grid').querySelectorAll('[data-photo]').forEach(b=>b.onclick=()=>{const id=Number(b.dataset.photo),grp=recordsMap?.groups.find(g=>g.photos.some(p=>p.OBJECTID===id));if(grp){recordsMap.selectWaypoint(grp.id,{pan:true});showPhotoGroup(grp);}else{const p=catalog.phone.find(x=>x.OBJECTID===id);if(p)showPhoto(p);}});}
  $('photo-date').onchange=$('photo-order').onchange=fill;fill();
 }
 function showPhotoGroup(group){
- if(group.photos.length===1){showPhoto(group.photos[0]);return;}
- openPanel('photos');$('context-title').textContent='Photos at this waypoint';
- $('context-body').innerHTML=`<p class="panel-intro">${group.photos.length} photos near this location · ${active?rangeLabel(range(active,group))+' from the active panorama':''}. Photos can be from a different visit.</p><button id="all-field-photos">Browse all field photos</button><div id="photo-grid">${group.photos.map(photoCard).join('')}</div>`;
- $('all-field-photos').onclick=photoGrid;$('photo-grid').querySelectorAll('[data-photo]').forEach(b=>b.onclick=()=>showPhoto(catalog.phone.find(p=>p.OBJECTID===Number(b.dataset.photo))));
+ selectedGroup=group;
+ selectedPhoto=group.photos[0];
+ openPanel('photos',true);
+ recordsMap?.selectWaypoint(group.id);
+ $('context-title').textContent=group.photos.length===1?'Photo at this waypoint':'Photos at this waypoint';
+ $('context-body').innerHTML=`<p class="panel-intro">${group.photos.length} ${group.photos.length===1?'photo':'photos'} at this location · ${active?rangeLabel(range(active,group))+' from the active panorama':''}. Photos can be from a different visit.</p><button id="all-field-photos">Browse all field photos</button><div id="photo-grid" class="${group.photos.length===1?'single-photo-grid':''}">${group.photos.map(waypointPhotoCard).join('')}</div>`;
+ $('all-field-photos').onclick=photoGrid;
+ $('photo-grid').querySelectorAll('[data-enlarge]').forEach(img=>img.onclick=()=>showPhoto(catalog.phone.find(p=>p.OBJECTID===Number(img.dataset.enlarge))));
+ $('photo-grid').querySelectorAll('[data-near-pano]').forEach(b=>b.onclick=()=>{const p=catalog.phone.find(x=>x.OBJECTID===Number(b.dataset.nearPano));if(!p||!window.buffalo)return;const target=[...window.buffalo.stations].sort((a,c)=>dist(a,p)-dist(c,p))[0];closePhoto();closePanel();window.buffalo.go(target,{reset:true});});
+ $('photo-grid').querySelectorAll('[data-photo-river]').forEach(b=>b.onclick=()=>{const p=catalog.phone.find(x=>x.OBJECTID===Number(b.dataset.photoRiver));if(!p)return;selectedPhoto=p;pinnedRiver=p;closePhoto();openPanel('river');});
 }
 async function showGauge(gauge){
  const snapshot=(pinnedRiver?.kind==='phone'?pinnedRiver:null)||($('photo-dialog')?.open&&selectedPhoto?selectedPhoto:null)||active;
@@ -63,7 +72,7 @@ async function riverPanel(){
  catch(e){if(token===renderToken&&req===request){$('river-status').textContent=e.message;const retry=document.createElement('button');retry.textContent='Retry record';retry.onclick=load;$('river-status').append(retry);}}}
  $('river-station').onchange=$('river-date').onchange=load;if($('follow-view'))$('follow-view').onclick=()=>{pinnedRiver=null;render();};await load();
 }
-function render(){renderToken++;if(panel==='photos')photoGrid();if(panel==='river')riverPanel();}
+function render(){renderToken++;if(panel==='photos'){selectedGroup?showPhotoGroup(selectedGroup):photoGrid();}if(panel==='river')riverPanel();}
 function sync(st){active=st;$('route-select').value=st.segmentId;const near=catalog.phone.filter(p=>dist(st,p)<=250).length;$('photo-count').textContent=near?`${near} nearby`:catalog.phone.length;$('river-chip').innerHTML=`<button id="chip-button">≋ ${fmt(st.WaterHeightFt)} ft <span>at gauge · ${esc(st.PhotoDateCDT)}</span></button>`;$('chip-button').onclick=()=>{pinnedRiver=null;openPanel('river');};if(panel==='river'&&!pinnedRiver)riverPanel();}
 async function init(){[catalog,config]=await Promise.all(['data.json','config.json'].map(async u=>{const r=await fetch(u);if(!r.ok)throw Error('Catalog could not load.');return r.json();}));
  const routes=[...new Set(catalog.panorama.map(s=>s.OriginalRoute))];for(const route of routes)$('route-select').add(new Option(route.replace(' Route',''),route));$('route-select').onchange=e=>{closePhoto();pinnedRiver=null;const st=window.buffalo?.stations.find(s=>s.segmentId===e.target.value);if(st)window.buffalo.go(st,{reset:true});};
