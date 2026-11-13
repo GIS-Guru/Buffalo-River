@@ -5,7 +5,7 @@ export const range=(a,b)=>distance(coord(a),coord(b));
 export const rangeLabel=m=>m<1000?`${Math.round(m)} m`:`${(m/1000).toFixed(1)} km`;
 export function photoGroups(photos){
  const groups=[];
- for(const p of photos){let g=groups.find(g=>range(g,p)<=80);if(!g){g={id:`photos-${p.OBJECTID}`,...coord(p),photos:[]};groups.push(g);}g.photos.push(p);}
+ for(const p of photos){let g=groups.find(g=>range(g,p)<=45);if(!g){g={id:`photos-${p.OBJECTID}`,...coord(p),photos:[]};groups.push(g);}g.photos.push(p);}
  return groups;
 }
 export function panoramaPoints(station,groups,gauges){
@@ -28,7 +28,7 @@ export function installWaypoints(catalog,{onPhotoGroup,onGauge}){
   if(p.kind==='gauge')marker.on('add',()=>{const el=marker.getElement();el?.setAttribute('tabindex','0');el?.setAttribute('role','button');el?.setAttribute('aria-label',label);if(el)el.onkeydown=e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();marker.fire('click');}};});
   marker.on('click',()=>{for(const m of markers)m.getElement()?.classList.toggle('chosen-waypoint',m===marker);p.kind==='photo'?onPhotoGroup(p):onGauge(p);});markers.push(marker);
  }
- for(const g of groups)add({...g,kind:'photo'},photos,g.photos.length+' field photos');
+ for(const g of groups)add({...g,kind:'photo'},photos,g.photos.length+(g.photos.length===1?' field photo':' field photos'));
  for(const g of catalog.stations)add({...g,...coord(g),kind:'gauge'},gauges,g.Name);
  const legend=document.createElement('div');legend.className='map-location-tools';legend.innerHTML='<span><i class="june-dot"></i> June 3</span><span><i class="august-dot"></i> August 31</span><span><i class="photo-dot"></i> Photos</span><span><i class="gauge-dot"></i> River stations</span><button id="all-locations">Show all locations</button>';document.querySelector('#map-panel').insertBefore(legend,document.querySelector('#map'));
  function routeOverview(){map.invalidateSize();map.fitBounds(L.latLngBounds(api.stations.map(p=>[p.lat,p.lon])),{padding:[6,6],animate:false});}
