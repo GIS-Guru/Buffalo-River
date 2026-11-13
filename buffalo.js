@@ -1,4 +1,4 @@
-import {installWaypoints,range,rangeLabel} from './waypoints.js';
+import {installWaypoints,range,rangeLabel} from './waypoints.js?v=20261113-v2';
 const $=id=>document.getElementById(id);
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const fmt=(v,n=2)=>v==null?'Unavailable':Number(v).toLocaleString('en-US',{maximumFractionDigits:n,minimumFractionDigits:n});
@@ -74,7 +74,7 @@ async function riverPanel(){
 }
 function render(){renderToken++;if(panel==='photos'){selectedGroup?showPhotoGroup(selectedGroup):photoGrid();}if(panel==='river')riverPanel();}
 function sync(st){active=st;$('route-select').value=st.segmentId;const near=catalog.phone.filter(p=>dist(st,p)<=250).length;$('photo-count').textContent=near?`${near} nearby`:catalog.phone.length;$('river-chip').innerHTML=`<button id="chip-button">≋ ${fmt(st.WaterHeightFt)} ft <span>at gauge · ${esc(st.PhotoDateCDT)}</span></button>`;$('chip-button').onclick=()=>{pinnedRiver=null;openPanel('river');};if(panel==='river'&&!pinnedRiver)riverPanel();}
-async function init(){[catalog,config]=await Promise.all(['data.json','config.json'].map(async u=>{const r=await fetch(u);if(!r.ok)throw Error('Catalog could not load.');return r.json();}));
+async function init(){[catalog,config]=await Promise.all(['data.json?v=20261113-v2','config.json?v=20261113-v2'].map(async u=>{const r=await fetch(u);if(!r.ok)throw Error('Catalog could not load.');return r.json();}));
  const routes=[...new Set(catalog.panorama.map(s=>s.OriginalRoute))];for(const route of routes)$('route-select').add(new Option(route.replace(' Route',''),route));$('route-select').onchange=e=>{closePhoto();pinnedRiver=null;const st=window.buffalo?.stations.find(s=>s.segmentId===e.target.value);if(st)window.buffalo.go(st,{reset:true});};
  $('open-photos').onclick=()=>openPanel('photos');$('open-river').onclick=()=>{pinnedRiver=null;openPanel('river');};$('close-context').onclick=closePanel;$('close-photo').onclick=closePhoto;
  $('photo-dialog').addEventListener('cancel',e=>{e.preventDefault();closePhoto();});$('field-photo').onerror=()=>{$('field-caption').textContent='This photo could not load. Close it and try again.';};

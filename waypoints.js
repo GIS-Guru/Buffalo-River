@@ -23,12 +23,17 @@ export function installWaypoints(catalog,{onPhotoGroup,onGauge}){
  const photos=L.layerGroup(),gauges=L.layerGroup();
  const markers=[];
  let selectedKey=null;
+ const selectionRing=L.circleMarker([0,0],{radius:13,color:'#00ffff',weight:3.5,fillColor:'#00e5ff',fillOpacity:0.28,interactive:false});
  const keyOf=p=>p.kind==='photo'?p.id:p.StationID;
  function syncSelection(){
+  let activeItem=null;
   for(const {marker,item} of markers){
    const on=selectedKey!==null&&keyOf(item)===selectedKey;
+   if(on)activeItem=item;
    marker.getElement()?.classList.toggle('chosen-waypoint',on);
   }
+  if(activeItem&&records){selectionRing.setLatLng([activeItem.lat,activeItem.lon]);if(!map.hasLayer(selectionRing))selectionRing.addTo(map);selectionRing.bringToFront();}
+  else if(map.hasLayer(selectionRing))map.removeLayer(selectionRing);
  }
  function selectWaypoint(key,{pan=false}={}){
   selectedKey=key;
@@ -57,6 +62,6 @@ export function installWaypoints(catalog,{onPhotoGroup,onGauge}){
  // Supporting information belongs to the records tab, never over the panorama.
  window.buffaloWaypoints=()=>[];api.refreshWaypoints();
  let records=false;
- function setRecordsMode(on){if(on===records)return;records=on;if(on){photos.addTo(map);gauges.addTo(map);syncSelection();routeOverview();requestAnimationFrame(routeOverview);}else{map.removeLayer(photos);map.removeLayer(gauges);}map.invalidateSize();}
+ function setRecordsMode(on){if(on===records)return;records=on;if(on){photos.addTo(map);gauges.addTo(map);syncSelection();routeOverview();requestAnimationFrame(routeOverview);}else{map.removeLayer(photos);map.removeLayer(gauges);if(map.hasLayer(selectionRing))map.removeLayer(selectionRing);}map.invalidateSize();}
  return {groups,setRecordsMode,selectWaypoint};
 }
